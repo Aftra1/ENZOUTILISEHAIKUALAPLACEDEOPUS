@@ -3,12 +3,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:wght@400;700&display=swap">
 <style>
-/* Mise en page : une scène plein écran par état ; chaque pièce est une scène 16:10 dont
-   les objets et les zones cliquables partagent les mêmes coordonnées en %. Monde noir et blanc unique. */
+/* Mise en page : une barre d'objectif en haut, la scène 16:10 au centre, une boîte de dialogue
+   en bas de la scène et un carnet d'indices qui s'ouvre par-dessus. Monde noir et blanc unique. */
 :root {
   --ink: #0b0b0b;
   --ash: #1c1c1b;
-  --smoke: #6e6d69;
+  --smoke: #8a8984;
   --bone: #e8e6df;
   --accent: #f0c27a;
   --danger: #d0453a;
@@ -26,68 +26,85 @@ body {
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* ----- Scènes ----- */
-.scene {
-  position: fixed; inset: 0;
-  display: none;
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+  padding-block: 10px;
+  gap: 10px;
 }
-.scene.active { display: grid; place-items: center; animation: fade .9s ease both; }
-@keyframes fade { from { opacity: .0; filter: brightness(2); } to { opacity: 1; filter: none; } }
 
-.center { text-align: center; }
-.center .inner { max-width: 34rem; display: grid; gap: 1.4rem; justify-items: center; position: relative; z-index: 2; }
+/* ----- Barre du haut : objectif + carnet ----- */
+.topbar {
+  display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap;
+  border-bottom: 1px solid #2c2c2a; padding-bottom: 10px;
+}
+.topbar[hidden] { display: none !important; }
+.brand { font-family: var(--display); font-style: italic; font-size: 1.4rem; white-space: nowrap; }
+.objective { flex: 1 1 18rem; min-width: 0; display: grid; gap: 2px; }
+.objective small { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--smoke); }
+.objective span { font-size: .92rem; line-height: 1.4; }
+.tools { display: flex; gap: 8px; align-items: center; }
+.pill {
+  border: 1px solid #4a4945; padding: .45rem .9rem;
+  font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
+  display: inline-flex; gap: .5em; align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.pill:hover { border-color: var(--bone); }
+.pill strong { color: var(--accent); }
+
+/* ----- Scènes ----- */
+.view { display: grid; place-items: center; min-height: 0; }
+.scene { display: none; width: 100%; height: 100%; place-items: center; min-height: 0; }
+.scene.active { display: grid; animation: fade .7s ease both; }
+@keyframes fade { from { opacity: 0; filter: brightness(2); } to { opacity: 1; filter: none; } }
+
+.stage {
+  position: relative;
+  width: min(100%, calc((100vh - 90px) * 1.6));
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid #2c2c2a;
+}
+.gray { position: absolute; inset: 0; filter: grayscale(1) contrast(1.15); }
+
+/* ----- Écrans d'intro et de fin ----- */
+.card-screen { max-width: 40rem; display: grid; gap: 1.4rem; justify-items: center; text-align: center; padding-block: 1rem; }
 h1 {
   font-family: var(--display); font-weight: 400;
-  font-size: clamp(2.6rem, 9vw, 5.5rem); line-height: 1; margin: 0;
-  letter-spacing: .02em; text-wrap: balance;
+  font-size: clamp(2.6rem, 9vw, 5rem); line-height: 1; margin: 0; text-wrap: balance;
 }
-.center p { margin: 0; line-height: 1.7; color: color-mix(in srgb, var(--bone) 78%, var(--ink)); }
+.card-screen p { margin: 0; line-height: 1.7; color: #c9c7c0; }
+.howto {
+  list-style: none; margin: 0; padding: 0; text-align: left;
+  display: grid; gap: .8rem; width: 100%;
+  border-block: 1px solid #2c2c2a; padding-block: 1.1rem;
+}
+.howto li { display: grid; grid-template-columns: 2.2rem 1fr; gap: .6rem; align-items: start; line-height: 1.5; font-size: .92rem; }
+.howto b { font-family: var(--display); font-size: 1.5rem; line-height: 1; color: var(--smoke); font-weight: 400; }
+.howto em { font-style: normal; color: var(--accent); }
 .btn {
-  border: 1px solid var(--bone); padding: .7rem 1.6rem;
-  text-transform: uppercase; letter-spacing: .25em; font-size: .8rem;
+  border: 1px solid var(--bone); padding: .75rem 1.8rem;
+  text-transform: uppercase; letter-spacing: .25em; font-size: .82rem;
   transition: background .2s, color .2s;
 }
 .btn:hover { background: var(--bone); color: var(--ink); }
 
-/* Scène de jeu à ratio fixe */
-.stage {
-  position: relative;
-  width: min(100%, 160vh);
-  aspect-ratio: 16 / 10;
-  max-height: 100%;
-  overflow: hidden;
-  filter: grayscale(1) contrast(1.15);
-}
-
 /* ----- Calques d'ambiance ----- */
 .dither, .vignette, .grain { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.dither {
-  background-image: var(--bayer);
-  background-size: 8px 8px;
-  image-rendering: pixelated;
-  mix-blend-mode: overlay;
-  opacity: .55;
-}
-.vignette { background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,.85) 100%); }
-.grain {
-  inset: -50%;
-  background-image: var(--noise);
-  opacity: .14;
-  animation: grain .6s steps(4) infinite;
-}
+.dither { background-image: var(--bayer); background-size: 8px 8px; image-rendering: pixelated; mix-blend-mode: overlay; opacity: .5; }
+.vignette { background: radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(0,0,0,.8) 100%); }
+.grain { inset: -50%; background-image: var(--noise); opacity: .12; animation: grain .6s steps(4) infinite; }
 @keyframes grain {
   0% { transform: translate(0,0); } 25% { transform: translate(-3%,2%); }
   50% { transform: translate(2%,-3%); } 75% { transform: translate(-1%,-2%); } 100% { transform: translate(0,0); }
 }
 
 /* ----- Salle circulaire ----- */
-.ceiling {
-  position: absolute; inset: 0 0 auto 0; height: 22%;
-  background: radial-gradient(ellipse 70% 120% at 50% 0%, #2a2a28, var(--ink) 70%);
-}
+.ceiling { position: absolute; inset: 0 0 auto 0; height: 22%; background: radial-gradient(ellipse 70% 120% at 50% 0%, #2a2a28, var(--ink) 70%); }
 .wall {
   position: absolute; left: -10%; right: -10%; top: 12%; height: 66%;
   border-radius: 50% / 18%;
@@ -106,17 +123,12 @@ h1 {
   transform-origin: 50% 0;
 }
 .doors {
-  position: absolute; inset: 22% 6% 28%;
+  position: absolute; inset: 20% 6% 26%;
   display: grid; grid-template-columns: repeat(4, 1fr);
   align-items: end; gap: 2%;
-  z-index: 3;
-  perspective: 900px;
+  z-index: 6; perspective: 900px;
 }
-.door {
-  position: relative; height: 100%;
-  display: flex; align-items: flex-end; justify-content: center;
-  cursor: pointer;
-}
+.door { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
 .door:nth-child(1) { transform: rotateY(32deg) scale(.86); transform-origin: 100% 100%; }
 .door:nth-child(2) { transform: rotateY(10deg) scale(.97); }
 .door:nth-child(3) { transform: rotateY(-10deg) scale(.97); }
@@ -126,236 +138,259 @@ h1 {
   background:
     linear-gradient(transparent 8%, rgba(255,255,255,.05) 8% 9%, transparent 9% 52%, rgba(255,255,255,.05) 52% 53%, transparent 53%),
     linear-gradient(90deg, #0a0a0a, #262624 50%, #0a0a0a);
-  border: 3px solid #4d4c48;
-  border-bottom: 0;
+  border: 3px solid #4d4c48; border-bottom: 0;
   box-shadow: 0 0 0 6px #121212, inset 0 0 30px #000;
   border-radius: 46% 46% 0 0 / 14% 14% 0 0;
-  transition: box-shadow .3s;
+  transition: box-shadow .3s, transform .3s;
 }
-.door:hover .door-panel { box-shadow: 0 0 0 6px #121212, inset 0 0 30px #000, 0 0 40px rgba(255,255,255,.08); }
+.door:hover .door-panel, .door:focus-visible .door-panel { box-shadow: 0 0 0 6px #121212, inset 0 0 30px #000, 0 0 40px rgba(255,255,255,.12); transform: translateY(-1%); }
 .sign {
   position: absolute; top: 14%; left: 50%; translate: -50% 0;
   font-family: var(--display); font-style: italic;
   font-size: clamp(.6rem, 1.6vw, 1.15rem); white-space: nowrap;
-  background: var(--bone); color: var(--ink); padding: .1em .6em;
+  background: #d9d7d0; color: var(--ink); padding: .1em .6em;
 }
+.door-state {
+  position: absolute; bottom: 8%; left: 50%; translate: -50% 0;
+  font-size: clamp(.5rem, 1vw, .72rem); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+  color: #b8b6af;
+}
+.door.locked .door-state { color: var(--danger); }
+.door.done .door-state { color: var(--accent); }
 .handle { position: absolute; right: 12%; top: 54%; width: 22%; aspect-ratio: 1; }
 .handle .plate { position: absolute; inset: -60% 30%; background: #3b3a37; border-radius: 3px; }
-.handle .rose { position: absolute; inset: 15%; border-radius: 50%; background: #5a5954; }
 .handle .knob {
   position: absolute; inset: 0; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #8e8c86, #2a2a28 70%);
   transition: box-shadow .25s, background .25s;
-  z-index: 1;
 }
-/* La poignée est la seule couleur du jeu : on la sort du filtre gris de la scène */
-.stage.hubstage { filter: none; }
-.hubstage > :not(.doors) { filter: grayscale(1) contrast(1.15); }
-.door:hover .knob {
+.door:hover .knob, .door:focus-visible .knob {
   background: radial-gradient(circle at 35% 30%, #fff1d6, var(--accent) 55%, #7a5a26);
   box-shadow: 0 0 14px 3px var(--accent);
 }
-.door.locked:hover .knob {
+.door.locked:hover .knob, .door.locked:focus-visible .knob {
   background: radial-gradient(circle at 35% 30%, #ffd2cc, var(--danger) 55%, #5a1512);
   box-shadow: 0 0 14px 3px var(--danger);
 }
-.door.locked .sign::after { content: " ×"; }
-
-/* ----- HUD, messages ----- */
-.hud {
-  position: absolute; top: 3%; right: 3%; z-index: 6;
-  font-size: clamp(.7rem, 1.4vw, .9rem); letter-spacing: .2em; text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-}
-.hud strong { color: var(--accent); }
-.toast {
-  position: absolute; left: 50%; bottom: 5%; translate: -50% 0;
-  width: min(90%, 38rem); z-index: 7;
-  background: rgba(0,0,0,.88); border: 1px solid var(--smoke);
-  padding: .9rem 1.2rem; line-height: 1.6;
-  font-size: clamp(.75rem, 1.5vw, .95rem);
-  opacity: 0; transform: translateY(8px);
-  transition: opacity .35s, transform .35s;
-  pointer-events: none;
-}
-.toast.show { opacity: 1; transform: none; }
-.room-title {
-  position: absolute; top: 3%; left: 3%; z-index: 6;
-  font-family: var(--display); font-style: italic; font-size: clamp(1.1rem, 3vw, 2rem);
-}
-.back {
-  position: absolute; bottom: 3%; left: 3%; z-index: 8;
-  font-size: clamp(.65rem, 1.3vw, .85rem); letter-spacing: .15em; text-transform: uppercase;
-  color: var(--smoke);
-}
-.back:hover { color: var(--bone); }
 
 /* ----- Pièces ----- */
 .room-bg { position: absolute; inset: 0; }
 .room-bg.chambre { background: linear-gradient(#262624 0 62%, #101010 62%); }
 .room-bg.cuisine { background: linear-gradient(#2e2e2b 0 66%, transparent 66%), repeating-linear-gradient(90deg, #d8d6cf 0 5%, #141414 5% 10%); }
-.room-bg.sdb { background: repeating-linear-gradient(#3b3a37 0 7px, #2e2d2a 7px 8px), #2e2d2a; background-size: 9% 9%; background-image: linear-gradient(90deg, rgba(0,0,0,.4) 1px, transparent 1px), linear-gradient(rgba(0,0,0,.4) 1px, transparent 1px); background-color: #4a4945; }
+.room-bg.sdb { background-color: #4a4945; background-image: linear-gradient(90deg, rgba(0,0,0,.4) 1px, transparent 1px), linear-gradient(rgba(0,0,0,.4) 1px, transparent 1px); background-size: 9% 9%; }
 .room-bg.toilette { background: linear-gradient(#1f1f1d 0 70%, transparent 70%), repeating-conic-gradient(#cfcdc6 0 25%, #121212 0 50%) 0 0 / 6% 9.6%; }
-
-#room-objects { position: absolute; inset: 0; z-index: 2; }
 .obj { position: absolute; }
-/* Chambre */
 .bed { left: 20%; top: 60%; width: 60%; height: 26%; background: #050505; border-radius: 6px 6px 2px 2px; box-shadow: 0 -14px 0 -4px #d9d7d0 inset, 0 20px 30px #000; }
 .bed::before { content: ""; position: absolute; left: 4%; top: -34%; width: 26%; height: 40%; background: #d9d7d0; border-radius: 30% 30% 10% 10%; }
 .card { left: 47%; top: 60%; width: 8%; height: 9%; background: var(--bone); transform: rotate(-9deg); box-shadow: 2px 3px 0 #000; }
 .mask { left: 28%; top: 54%; width: 8%; height: 5%; background: #000; border-radius: 50% 50% 40% 40%; border: 1px solid #5a5954; }
-/* Cuisine */
-.fridge { left: 58%; top: 20%; width: 26%; height: 60%; background: linear-gradient(90deg, #cfcdc6, #f2f0ea 40%, #a7a59f); border-radius: 8px; box-shadow: inset 0 -38% 0 0 transparent; }
+.fridge { left: 58%; top: 20%; width: 26%; height: 60%; background: linear-gradient(90deg, #cfcdc6, #f2f0ea 40%, #a7a59f); border-radius: 8px; }
 .fridge::after { content: ""; position: absolute; left: 0; right: 0; top: 34%; height: 2px; background: #555; }
 .note { left: 69%; top: 33%; width: 8%; height: 11%; background: #fff; transform: rotate(4deg); box-shadow: 1px 2px 0 #000; }
 .counter { left: 6%; top: 58%; width: 48%; height: 26%; background: #151515; border-top: 8px solid #6e6d69; }
 .kettle { left: 19%; top: 44%; width: 8%; height: 14%; background: radial-gradient(circle at 35% 30%, #fff, #777 60%, #222); border-radius: 40% 40% 10% 10%; }
-/* Salle de bain */
 .curtain { left: 12%; top: 18%; width: 40%; height: 62%; background: repeating-linear-gradient(90deg, #e3e1da 0 4%, #9b9993 4% 6%, #e3e1da 6% 9%); border-top: 6px solid #111; }
 .sink { left: 58%; top: 28%; width: 28%; height: 16%; background: radial-gradient(ellipse at 50% 20%, #5a5954 0 30%, #e8e6df 32%); border-radius: 6px 6px 50% 50%; }
 .towel { left: 64%; top: 58%; width: 14%; height: 12%; background: repeating-linear-gradient(#ffffff 0 6px, #d2d0c9 6px 8px); }
-/* Toilette */
 .tank { left: 38%; top: 34%; width: 24%; height: 22%; background: linear-gradient(#f0eee8, #b9b7b0); border-radius: 4px; }
 .bowl { left: 41%; top: 56%; width: 18%; height: 22%; background: radial-gradient(ellipse at 50% 15%, #1a1a1a 0 32%, #e8e6df 34%); border-radius: 10% 10% 45% 45%; }
 .silhouette { left: 66%; top: 30%; width: 10%; height: 40%; background: #000; border-radius: 45% 45% 18% 18% / 14% 14% 6% 6%; filter: blur(1.5px); opacity: .92; animation: sway 6s ease-in-out infinite; }
 .silhouette::before { content: ""; position: absolute; left: 22%; top: -24%; width: 56%; height: 26%; background: #000; border-radius: 50%; }
 @keyframes sway { 50% { transform: translateX(4%); opacity: .8; } }
-.photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; image-rendering: pixelated; }
+.photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
-/* Zones cliquables */
-.hotspot { position: absolute; z-index: 3; }
+/* Zones cliquables : un repère visible au centre de chaque objet */
+.hotspot { position: absolute; z-index: 6; display: grid; place-items: center; }
+.hotspot::before {
+  content: ""; width: clamp(14px, 2.2vw, 22px); aspect-ratio: 1; border-radius: 50%;
+  border: 2px solid var(--bone); background: rgba(0,0,0,.45);
+  box-shadow: 0 0 0 0 rgba(232,230,223,.6);
+  animation: ping 2s ease-out infinite;
+}
+.hotspot.found::before { background: var(--bone); animation: none; opacity: .55; }
+.hotspot.key::before { border-color: var(--accent); }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(232,230,223,.55); } 100% { box-shadow: 0 0 0 14px rgba(232,230,223,0); } }
 .hotspot .label {
-  position: absolute; left: 50%; top: -1.6em; translate: -50% 0;
-  white-space: nowrap; font-size: clamp(.6rem, 1.2vw, .8rem); letter-spacing: .12em; text-transform: uppercase;
-  background: var(--ink); padding: .1em .5em; opacity: 0; transition: opacity .2s;
+  position: absolute; left: 50%; top: calc(50% + 16px); translate: -50% 0;
+  white-space: nowrap; font-size: clamp(.58rem, 1.15vw, .78rem); letter-spacing: .12em; text-transform: uppercase;
+  background: var(--ink); padding: .15em .55em; opacity: 0; transition: opacity .2s;
 }
 .hotspot:hover .label, .hotspot:focus-visible .label { opacity: 1; }
 .hotspot:hover { outline: 1px dashed rgba(232,230,223,.35); }
-.hotspot.found .label::after { content: " ✓"; }
 
+.back {
+  position: absolute; top: 3%; left: 3%; z-index: 8;
+  background: rgba(0,0,0,.7); border: 1px solid #4a4945;
+  padding: .4rem .8rem; font-size: clamp(.62rem, 1.2vw, .8rem); letter-spacing: .14em; text-transform: uppercase;
+}
+.back:hover { border-color: var(--bone); }
+.room-title {
+  position: absolute; top: 3%; right: 3%; z-index: 8;
+  font-family: var(--display); font-style: italic; font-size: clamp(1.1rem, 3vw, 2rem);
+}
+
+/* ----- Boîte de dialogue ----- */
+.dialog {
+  position: absolute; left: 50%; bottom: 4%; translate: -50% 0;
+  width: min(92%, 40rem); z-index: 9;
+  background: rgba(8,8,8,.94); border: 1px solid var(--smoke);
+  padding: 1rem 1.2rem; display: grid; gap: .7rem;
+  font-size: clamp(.78rem, 1.5vw, .95rem); line-height: 1.6;
+}
+.dialog .tag { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+.dialog .tag.bad { color: var(--danger); }
+.dialog .tag.plain { color: var(--smoke); }
+.dialog p { margin: 0; }
+.dialog .ok { justify-self: end; border: 1px solid #4a4945; padding: .3rem .9rem; font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; }
+.dialog .ok:hover { border-color: var(--bone); }
+
+/* ----- Carnet ----- */
+.journal-wrap {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(0,0,0,.7);
+  display: grid; place-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.journal {
+  width: min(100%, 34rem); max-height: 85vh; overflow: auto;
+  background: #d9d7d0; color: var(--ink);
+  padding: 1.4rem 1.6rem; display: grid; gap: 1rem;
+  box-shadow: 8px 8px 0 #000;
+}
+.journal header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.journal h2 { font-family: var(--display); font-weight: 400; font-style: italic; font-size: 1.8rem; margin: 0; }
+.journal .close { font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; border-bottom: 1px solid currentColor; }
+.journal ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+.journal li { border-top: 1px dashed #6e6d69; padding-top: .8rem; display: grid; gap: .25rem; font-size: .9rem; line-height: 1.5; }
+.journal li small { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: #55544f; }
+.journal li.empty { color: #6e6d69; font-style: italic; }
+
+@media (max-width: 560px) {
+  .brand { display: none; }
+  .door-state { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .grain, .silhouette { animation: none; }
-  .scene.active { animation: none; }
+  .grain, .silhouette, .hotspot::before, .scene.active { animation: none; }
 }
 </style>
 
-<!-- ACCUEIL -->
-<section id="intro" class="scene center">
-  <div class="dither"></div><div class="vignette"></div>
-  <div class="inner">
-    <h1>Trouver Donna</h1>
-    <p>Quelque part dans cette maison, une personne nommée Donna se cache. Explorez les pièces, rassemblez les indices et trouvez-la.</p>
-    <button class="btn" id="start">Commencer</button>
-  </div>
-</section>
-
-<!-- SALLE CIRCULAIRE -->
-<section id="hub" class="scene active">
-  <div class="stage hubstage">
-    <div class="ceiling"></div>
-    <div class="wall"></div>
-    <div class="floor"></div>
-    <div class="doors">
-      <div class="door" data-room="cuisine" role="button" tabindex="0" aria-label="Ouvrir la cuisine">
-        <div class="door-panel"><div class="sign">Cuisine</div><span class="handle"><span class="plate"></span><span class="rose"></span><span class="knob"></span></span></div>
-      </div>
-      <div class="door" data-room="toilette" role="button" tabindex="0" aria-label="Ouvrir la toilette">
-        <div class="door-panel"><div class="sign">Toilette</div><span class="handle"><span class="plate"></span><span class="rose"></span><span class="knob"></span></span></div>
-      </div>
-      <div class="door" data-room="chambre" role="button" tabindex="0" aria-label="Ouvrir la chambre">
-        <div class="door-panel"><div class="sign">Chambre</div><span class="handle"><span class="plate"></span><span class="rose"></span><span class="knob"></span></span></div>
-      </div>
-      <div class="door" data-room="sdb" role="button" tabindex="0" aria-label="Ouvrir la salle de bain">
-        <div class="door-panel"><div class="sign">Salle de bain</div><span class="handle"><span class="plate"></span><span class="rose"></span><span class="knob"></span></span></div>
-      </div>
+<div class="app">
+  <header class="topbar" id="topbar" hidden>
+    <div class="brand">Trouver Donna</div>
+    <div class="objective"><small>Objectif</small><span id="objective"></span></div>
+    <div class="tools">
+      <button class="pill" id="open-journal">Carnet <strong id="count">0</strong>/<span id="total">4</span></button>
     </div>
-    <div class="dither"></div>
-    <div class="vignette"></div>
-    <div class="grain"></div>
-    <div class="hud">Indices : <strong id="hub-count">0</strong> / 3</div>
-    <div class="toast" id="toast"></div>
-  </div>
-</section>
+  </header>
 
-<!-- PIÈCE -->
-<section id="room" class="scene">
-  <div class="stage">
-    <div class="room-bg" id="room-bg"></div>
-    <div id="room-objects"></div>
-    <div class="dither"></div>
-    <div class="vignette"></div>
-    <div class="grain"></div>
-    <div class="room-title" id="room-title"></div>
-    <div class="hud">Indices : <strong id="room-count">0</strong> / 3</div>
-    <div class="toast" id="room-toast"></div>
-    <button class="back" id="back">← Retour à la salle</button>
-  </div>
-</section>
+  <main class="view">
+    <!-- ACCUEIL -->
+    <section id="intro" class="scene active">
+      <div class="card-screen">
+        <h1>Trouver Donna</h1>
+        <p>Donna a disparu quelque part dans cette maison. Vous êtes dans une salle ronde entourée de quatre portes.</p>
+        <ol class="howto">
+          <li><b>1</b><span><strong>Cliquez sur une porte</strong> pour entrer dans une pièce. La porte de la chambre est fermée à clé au début.</span></li>
+          <li><b>2</b><span>Dans chaque pièce, <strong>cliquez sur les ronds clignotants</strong> pour examiner les objets. Certains cachent un <em>indice</em>.</span></li>
+          <li><b>3</b><span>Les indices trouvés vont dans votre <strong>carnet</strong> (en haut à droite). La barre « Objectif » vous dit toujours quoi faire ensuite.</span></li>
+          <li><b>4</b><span>Avec les <strong>4 indices</strong>, allez voir la silhouette dans la toilette.</span></li>
+        </ol>
+        <button class="btn" id="start">Entrer dans la maison</button>
+      </div>
+    </section>
 
-<!-- FIN -->
-<section id="end" class="scene center">
-  <div class="dither"></div><div class="vignette"></div>
-  <div class="inner">
-    <h1>Donna.</h1>
-    <p>Elle était là, assise dans la pénombre de la toilette, comme si elle attendait que quelqu'un frappe enfin. Vous l'avez trouvée.</p>
-    <button class="btn" id="replay">Rejouer</button>
+    <!-- SALLE CIRCULAIRE -->
+    <section id="hub" class="scene">
+      <div class="stage">
+        <div class="gray">
+          <div class="ceiling"></div>
+          <div class="wall"></div>
+          <div class="floor"></div>
+        </div>
+        <div class="doors" id="doors"></div>
+        <div class="dither"></div>
+        <div class="vignette"></div>
+        <div class="grain"></div>
+        <div class="dialog" id="hub-dialog" hidden></div>
+      </div>
+    </section>
+
+    <!-- PIÈCE -->
+    <section id="room" class="scene">
+      <div class="stage">
+        <div class="gray">
+          <div class="room-bg" id="room-bg"></div>
+          <div id="room-objects"></div>
+        </div>
+        <div id="room-spots"></div>
+        <div class="dither"></div>
+        <div class="vignette"></div>
+        <div class="grain"></div>
+        <button class="back" id="back">← Salle ronde</button>
+        <div class="room-title" id="room-title"></div>
+        <div class="dialog" id="room-dialog" hidden></div>
+      </div>
+    </section>
+
+    <!-- FIN -->
+    <section id="end" class="scene">
+      <div class="card-screen">
+        <h1>Donna.</h1>
+        <p>Elle était là, assise dans la pénombre de la toilette, comme si elle attendait que quelqu'un frappe enfin. Vous l'avez trouvée.</p>
+        <button class="btn" id="replay">Rejouer</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="journal-wrap" id="journal" hidden>
+  <div class="journal" role="dialog" aria-modal="true" aria-labelledby="journal-title">
+    <header><h2 id="journal-title">Carnet</h2><button class="close" id="close-journal">Fermer</button></header>
+    <ol id="journal-list"></ol>
   </div>
-</section>
+</div>
 
 <script>
 (function () {
-  const state = { clues: new Set() };
-  const CLUES_NEEDED = 3;
-
   const $ = (sel) => document.querySelector(sel);
-  const scenes = { intro: $('#intro'), hub: $('#hub'), room: $('#room'), end: $('#end') };
 
-  function show(name) {
-    Object.values(scenes).forEach(s => s.classList.remove('active'));
-    scenes[name].classList.add('active');
-  }
-
-  function toast(el, text, ms = 3800) {
-    el.textContent = text;
-    el.classList.add('show');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), ms);
-  }
-
-  function updateCount() {
-    const n = state.clues.size;
-    $('#hub-count').textContent = n;
-    $('#room-count').textContent = n;
-    document.querySelectorAll('.door[data-room="chambre"]').forEach(d =>
-      d.classList.toggle('locked', !state.clues.has('toilette')));
-  }
-
-  /* ----- Définition des pièces ----- */
+  /* ----- Pièces et indices -----
+     Un indice = un objet avec `clue`. Le réservoir de la toilette ouvre la chambre.
+     Avec tous les indices, la silhouette de la toilette mène à la fin. */
   const rooms = {
-    chambre: {
-      title: 'Chambre', bg: 'chambre',
-      objects: `<div class="bed obj"></div><div class="mask obj"></div><div class="card obj"></div>`,
-      spots: [
-        { id: 'carte', x: 44, y: 52, w: 14, h: 18, label: 'Une carte', clue: 'chambre',
-          text: '« Je ne suis jamais loin de l\'eau. » Écrit à la main, au dos d\'une carte de visite.' },
-        { id: 'masque', x: 26, y: 50, w: 12, h: 14, label: 'Un objet', clue: null,
-          text: 'Un masque de nuit, noir et froid. Il ne vous dira rien sur Donna.' },
-        { id: 'lit', x: 20, y: 70, w: 60, h: 16, label: 'Le lit', clue: null,
-          text: 'Le drap est lisse, presque trop. Personne n\'a dormi ici depuis longtemps.' }
-      ]
-    },
     cuisine: {
       title: 'Cuisine', bg: 'cuisine',
-      // Photos à venir : photos: ['data:image/jpeg;base64,...', ...]
-      photos: null,
+      photos: null, // photos à venir : ['data:image/jpeg;base64,...', ...]
       objects: `<div class="counter obj"></div><div class="kettle obj"></div><div class="fridge obj"></div><div class="note obj"></div>`,
       spots: [
-        { id: 'frigo', x: 58, y: 20, w: 26, h: 60, label: 'Le frigo', clue: null,
+        { id: 'frigo', x: 58, y: 48, w: 26, h: 32, label: 'Le frigo',
           text: 'Rien d\'intéressant, à part une photo qu\'on a décollée en hâte.' },
         { id: 'mot', x: 68, y: 32, w: 10, h: 14, label: 'Un mot', clue: 'cuisine',
           text: '« Donna est partie se rafraîchir avant le dîner. » L\'écriture est pressée.' },
-        { id: 'bouilloire', x: 18, y: 42, w: 10, h: 18, label: 'La bouilloire', clue: null,
+        { id: 'bouilloire', x: 18, y: 42, w: 10, h: 18, label: 'La bouilloire',
           text: 'Froide. Elle n\'a pas servi depuis plusieurs heures.' }
+      ]
+    },
+    toilette: {
+      title: 'Toilette', bg: 'toilette',
+      objects: `<div class="tank obj"></div><div class="bowl obj"></div><div class="silhouette obj"></div>`,
+      spots: [
+        { id: 'chasse', x: 38, y: 34, w: 24, h: 22, label: 'Le réservoir', clue: 'toilette', unlocks: 'chambre',
+          text: 'Derrière le réservoir, un papier plié et une petite clé : « La chambre garde ce que la cuisine a oublié. »' },
+        { id: 'silhouette', x: 64, y: 22, w: 14, h: 48, label: 'Une silhouette', final: true }
+      ]
+    },
+    chambre: {
+      title: 'Chambre', bg: 'chambre', locked: true,
+      objects: `<div class="bed obj"></div><div class="mask obj"></div><div class="card obj"></div>`,
+      spots: [
+        { id: 'carte', x: 44, y: 54, w: 14, h: 18, label: 'Une carte', clue: 'chambre',
+          text: '« Je ne suis jamais loin de l\'eau. » Écrit à la main, au dos d\'une carte de visite.' },
+        { id: 'masque', x: 26, y: 50, w: 12, h: 12, label: 'Un masque',
+          text: 'Un masque de nuit, noir et froid. Il ne vous dira rien sur Donna.' },
+        { id: 'lit', x: 20, y: 74, w: 60, h: 12, label: 'Le lit',
+          text: 'Le drap est lisse, presque trop. Personne n\'a dormi ici depuis longtemps.' }
       ]
     },
     sdb: {
@@ -364,100 +399,162 @@ h1 {
       spots: [
         { id: 'serviette', x: 64, y: 58, w: 14, h: 12, label: 'La serviette', clue: 'sdb',
           text: 'Encore humide. Glissé dessous, un petit mot : « Elle n\'est pas dans la douche. »' },
-        { id: 'rideau', x: 12, y: 18, w: 40, h: 62, label: 'Le rideau', clue: null,
+        { id: 'rideau', x: 12, y: 18, w: 40, h: 62, label: 'Le rideau',
           text: 'Vous tirez le rideau. Il n\'y a que du carrelage et un peu d\'eau.' },
-        { id: 'lavabo', x: 58, y: 28, w: 28, h: 16, label: 'Le lavabo', clue: null,
+        { id: 'lavabo', x: 58, y: 28, w: 28, h: 16, label: 'Le lavabo',
           text: 'Le robinet goutte doucement. Quelqu\'un s\'est lavé les mains ici récemment.' }
-      ]
-    },
-    toilette: {
-      title: 'Toilette', bg: 'toilette',
-      objects: `<div class="tank obj"></div><div class="bowl obj"></div><div class="silhouette obj"></div>`,
-      spots: [
-        { id: 'silhouette', x: 64, y: 22, w: 14, h: 48, label: 'Une silhouette', clue: null, final: true, text: '' },
-        { id: 'chasse', x: 38, y: 34, w: 24, h: 22, label: 'Le réservoir', clue: 'toilette',
-          text: 'Derrière le réservoir, un papier plié : « La chambre garde ce que la cuisine a oublié. » La porte de la chambre semble maintenant s\'entrouvrir.' }
       ]
     }
   };
+  const DOOR_ORDER = ['cuisine', 'toilette', 'chambre', 'sdb'];
+  const ALL_CLUES = DOOR_ORDER.flatMap(k => rooms[k].spots.filter(s => s.clue).map(s => ({ ...s, room: k })));
 
-  /* ----- Construction d'une pièce ----- */
-  function enterRoom(key) {
-    const r = rooms[key];
+  const state = { clues: [], unlocked: new Set(), room: null };
+  const has = (c) => state.clues.includes(c);
+  const isLocked = (k) => rooms[k].locked && !state.unlocked.has(k);
+  const roomDone = (k) => rooms[k].spots.filter(s => s.clue).every(s => has(s.clue));
+
+  /* ----- Objectif : toujours dire quoi faire ensuite ----- */
+  function objective() {
+    const n = state.clues.length, total = ALL_CLUES.length;
+    if (n === total) return 'Vous avez tous les indices. Retournez dans la toilette et approchez la silhouette.';
+    if (isLocked('chambre')) {
+      return n === 0
+        ? 'Choisissez une porte et fouillez la pièce : cliquez sur les ronds clignotants.'
+        : 'La chambre est fermée à clé. Cherchez la clé dans les autres pièces.';
+    }
+    const left = DOOR_ORDER.filter(k => !roomDone(k)).map(k => rooms[k].title.toLowerCase());
+    return `Il reste ${total - n} indice${total - n > 1 ? 's' : ''} à trouver : fouillez ${left.join(' et ')}.`;
+  }
+
+  function refresh() {
+    $('#count').textContent = state.clues.length;
+    $('#total').textContent = ALL_CLUES.length;
+    $('#objective').textContent = objective();
+    renderDoors();
+  }
+
+  /* ----- Navigation ----- */
+  const scenes = ['intro', 'hub', 'room', 'end'];
+  function show(name) {
+    scenes.forEach(s => $('#' + s).classList.toggle('active', s === name));
+    $('#topbar').hidden = (name === 'intro' || name === 'end');
+    hideDialog('#hub-dialog'); hideDialog('#room-dialog');
+  }
+
+  function say(sel, text, kind = 'plain', tag) {
+    const d = $(sel);
+    const labels = { clue: 'Indice trouvé', bad: 'Fermé', plain: 'Vous examinez' };
+    d.innerHTML = `<span class="tag ${kind}"></span><p></p><button class="ok">Continuer</button>`;
+    d.querySelector('.tag').textContent = tag || labels[kind];
+    d.querySelector('p').textContent = text;
+    d.querySelector('.ok').addEventListener('click', () => hideDialog(sel));
+    d.hidden = false;
+    d.querySelector('.ok').focus({ preventScroll: true });
+  }
+  function hideDialog(sel) { $(sel).hidden = true; }
+
+  /* ----- Salle circulaire ----- */
+  function renderDoors() {
+    $('#doors').innerHTML = DOOR_ORDER.map(k => {
+      const r = rooms[k];
+      const st = isLocked(k) ? 'Fermée à clé' : roomDone(k) ? 'Fouillée' : 'Ouverte';
+      const cls = isLocked(k) ? 'locked' : roomDone(k) ? 'done' : '';
+      return `<div class="door ${cls}" data-room="${k}" role="button" tabindex="0" aria-label="${r.title} : ${st}">
+        <div class="door-panel"><div class="sign">${r.title}</div>
+          <span class="handle"><span class="plate"></span><span class="knob"></span></span>
+          <div class="door-state">${st}</div></div></div>`;
+    }).join('');
+    $('#doors').querySelectorAll('.door').forEach(door => {
+      const open = () => tryDoor(door.dataset.room);
+      door.addEventListener('click', open);
+      door.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+  }
+
+  function tryDoor(k) {
+    if (isLocked(k)) {
+      say('#hub-dialog', 'La poignée ne tourne pas. Cette porte est fermée à clé : la clé est cachée dans une autre pièce.', 'bad');
+      return;
+    }
+    enterRoom(k);
+  }
+
+  /* ----- Pièce ----- */
+  function enterRoom(k) {
+    const r = rooms[k];
+    state.room = k;
     $('#room-bg').className = 'room-bg ' + r.bg;
     $('#room-title').textContent = r.title;
-    const photoHtml = r.photos
-      ? `<img class="photo" id="room-photo" src="${r.photos[0]}" alt="${r.title}">` : '';
-    $('#room-objects').innerHTML = photoHtml + (r.photos ? '' : r.objects) + r.spots.map(s => `
-      <button class="hotspot ${s.clue && state.clues.has(s.clue) ? 'found' : ''}"
-        data-spot="${s.id}"
-        style="left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%"
-        aria-label="${s.label}"><span class="label">${s.label}</span></button>`).join('');
-
-    $('#room-objects').querySelectorAll('.hotspot').forEach(btn => {
-      btn.addEventListener('click', () => onSpot(key, btn.dataset.spot));
-    });
-
-    if (r.photos) {
-      const img = document.getElementById('room-photo');
-      let idx = 0;
-      img.addEventListener('click', () => {
-        idx = (idx + 1) % r.photos.length;
-        img.src = r.photos[idx];
-      });
-    }
-    $('#room-toast').classList.remove('show');
-    updateCount();
+    $('#room-objects').innerHTML = r.photos
+      ? `<img class="photo" src="${r.photos[0]}" alt="${r.title}">` : r.objects;
+    renderSpots();
     show('room');
   }
 
-  function onSpot(roomKey, spotId) {
-    const spot = rooms[roomKey].spots.find(s => s.id === spotId);
-    const el = $('#room-toast');
-
-    if (spot.final) {
-      if (state.clues.size >= CLUES_NEEDED) {
-        setTimeout(() => show('end'), 500);
-      } else {
-        toast(el, 'Il y a bien quelqu\'un ici, mais vous ne pouvez pas encore l\'approcher. Trouvez les trois indices.');
-      }
-      return;
-    }
-    if (spot.clue) {
-      state.clues.add(spot.clue);
-      updateCount();
-      const btn = document.querySelector(`[data-spot="${spotId}"]`);
-      if (btn) btn.classList.add('found');
-    }
-    toast(el, spot.text);
+  function renderSpots() {
+    const r = rooms[state.room];
+    $('#room-spots').innerHTML = r.spots.map(s => {
+      const cls = [s.clue && has(s.clue) ? 'found' : '', s.final && state.clues.length === ALL_CLUES.length ? 'key' : ''].join(' ');
+      return `<button class="hotspot ${cls}" data-spot="${s.id}"
+        style="left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%"
+        aria-label="${s.label}"><span class="label">${s.label}</span></button>`;
+    }).join('');
+    $('#room-spots').querySelectorAll('.hotspot').forEach(btn =>
+      btn.addEventListener('click', () => onSpot(btn.dataset.spot)));
   }
 
-  /* ----- Portes de la salle circulaire (toute la porte est cliquable) ----- */
-  document.querySelectorAll('.door').forEach(door => {
-    const key = door.dataset.room;
-    const open = () => {
-      if (key === 'chambre' && !state.clues.has('toilette')) {
-        toast($('#toast'), 'La poignée ne tourne pas. Cette porte est verrouillée : il manque un indice.');
-        return;
-      }
-      enterRoom(key);
-    };
-    door.addEventListener('click', open);
-    door.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
-  });
+  function onSpot(id) {
+    const spot = rooms[state.room].spots.find(s => s.id === id);
+    const total = ALL_CLUES.length;
 
-  $('#back').addEventListener('click', () => {
-    $('#room-toast').classList.remove('show');
-    show('hub');
-  });
+    if (spot.final) {
+      const missing = total - state.clues.length;
+      if (missing === 0) { setTimeout(() => show('end'), 400); return; }
+      say('#room-dialog', `Quelqu'un est assis là, immobile. Vous n'osez pas encore l'approcher. Il vous manque ${missing} indice${missing > 1 ? 's' : ''}.`, 'plain', 'Une silhouette');
+      return;
+    }
+
+    if (spot.clue && !has(spot.clue)) {
+      state.clues.push(spot.clue);
+      let extra = '';
+      if (spot.unlocks) {
+        state.unlocked.add(spot.unlocks);
+        extra = ` La porte de la ${rooms[spot.unlocks].title.toLowerCase()} est maintenant ouverte.`;
+      }
+      refresh();
+      renderSpots();
+      say('#room-dialog', spot.text + extra, 'clue', `Indice trouvé · ${state.clues.length}/${total}`);
+      return;
+    }
+    say('#room-dialog', spot.text, spot.clue ? 'clue' : 'plain', spot.clue ? 'Déjà dans le carnet' : undefined);
+  }
+
+  /* ----- Carnet ----- */
+  function openJournal() {
+    $('#journal-list').innerHTML = ALL_CLUES.map(c => has(c.clue)
+      ? `<li><small>${rooms[c.room].title} · ${c.label}</small><span></span></li>`
+      : `<li class="empty"><small>Indice manquant</small><span>Pas encore trouvé.</span></li>`).join('');
+    $('#journal-list').querySelectorAll('li:not(.empty) span').forEach((el, i) => {
+      el.textContent = ALL_CLUES.filter(c => has(c.clue))[i].text;
+    });
+    $('#journal').hidden = false;
+    $('#close-journal').focus();
+  }
+  $('#open-journal').addEventListener('click', openJournal);
+  $('#close-journal').addEventListener('click', () => { $('#journal').hidden = true; });
+  $('#journal').addEventListener('click', e => { if (e.target.id === 'journal') $('#journal').hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#journal').hidden = true; });
+
+  $('#back').addEventListener('click', () => show('hub'));
   $('#start').addEventListener('click', () => show('hub'));
   $('#replay').addEventListener('click', () => {
-    state.clues.clear();
-    updateCount();
+    state.clues = []; state.unlocked.clear(); state.room = null;
+    refresh();
     show('intro');
   });
 
-  updateCount();
+  refresh();
 
   // Trame de dithering ordonné (matrice de Bayer 4x4) et grain, générés une fois
   (function buildTextures() {
